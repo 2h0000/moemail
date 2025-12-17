@@ -309,14 +309,15 @@ const pushPagesSecret = () => {
       }
     });
 
-    // 写入JSON格式的临时文件
-    writeFileSync(runtimeEnvFile, JSON.stringify(envVars, null, 2));
-
-    // 使用临时文件推送secrets
-    execSync(`npx wrangler pages secret bulk ${runtimeEnvFile}`, { stdio: "inherit" });
-
-    // 清理临时文件
-    execSync(`rm ${runtimeEnvFile}`, { stdio: "inherit" });
+    // 逐个设置环境变量，避免批量设置的格式问题
+    for (const [key, value] of Object.entries(envVars)) {
+      try {
+        console.log(`Setting secret: ${key}`);
+        execSync(`echo "${value}" | npx wrangler pages secret put ${key}`, { stdio: "inherit" });
+      } catch (error) {
+        console.warn(`Failed to set secret ${key}:`, error);
+      }
+    }
 
     console.log("✅ Secrets pushed successfully");
   } catch (error) {
